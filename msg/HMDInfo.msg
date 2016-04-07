@@ -1,0 +1,20 @@
+Header header
+string ProductName
+string Manufacturer
+uint32 Version
+uint32 HResolution
+uint32 VResolution
+string DisplayDeviceName
+int32 DisplayId
+int32 WindowsPosX
+int32 WindowsPosY
+uint32 HmdCaps
+uint32 SensorCaps
+uint32 DistortionCaps
+float32 InterpupillaryDistance
+float32[] DefaultEyeFovLeft
+float32[] DefaultEyeFovRight
+float32[] MaxEyeFovLeft
+float32[] MaxEyeFovRight
+int32[] EyeRenderOrder
+

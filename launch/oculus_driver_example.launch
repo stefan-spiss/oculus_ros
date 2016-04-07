@@ -1,0 +1,5 @@
+<launch>
+	<node name="oculus_driver" pkg="oculus_ros" type="ros_driver">
+		<param name="frequency" value="10"/>
+	</node>
+</launch>
