@@ -24,3 +24,12 @@ Finally, the distortion correction was done with help from the work from Scott A
   To change the camera topic ROS parameters are used. There is a example launch-file available to see how that works.
   
   When the node is running, the distortion can be changed with the **arrow-keys** **left** and **right**, it can be zoomed in and out with the **arror-keys** **up** and **down** and finally the **j** and **k** key is mapped to change the distance between both images.
+
+
+## Setup and Dependencies
+- For the Oculus Rift it is necessary to run the shell script **OculuConfigurationUtility.sh** which can be found in the folder **Platform/Linux**.
+- Following libraries are necessary: 
+  - OpenGL 3.0
+  - glm
+  - SDL 2.0
+  - OpenCV
