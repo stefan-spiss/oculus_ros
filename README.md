@@ -15,6 +15,7 @@ Finally, the distortion correction was done with help from the work from Scott A
   - for sensor values when available: **/oculus/orientation**
   Additionally **tf** data is also published when a sensor is available.
   To change the frequency the data is published ROS parameters are used. There is a example launch-file available to see how that works.
+
 ### ros_viewer
   Node subscribes to camera topic and renders the video for the Oculus Rift. If the topic **/oculus/hmd_info** is available it is directly viewed on the Oculus, otherwise it is rendered to the normal screen.
   To change the camera topic ROS parameters are used. There is a example launch-file available to see how that works.
