@@ -16,8 +16,8 @@ namespace Render {
 
 class RenderView {
 
-#define DEFAULT_DISTORTION_CONSTANT 0.6
-#define DEFAULT_SCALE 1.2
+#define DEFAULT_DISTORTION_CONSTANT 0.2
+#define DEFAULT_SCALE 0.95
 #define DEFAULT_IMAGE_SHIFT_CONSTANT 0.05
 
 public:

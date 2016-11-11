@@ -199,12 +199,14 @@ void RenderView::setResolution(unsigned width, unsigned height) {
 void RenderView::increaseDistortionConstant(float k1) {
 	distortion_constant += k1;
 	shaderProgram->setUniform1f("k1", distortion_constant);
+//	std::cout << "distortion constant: " << this->distortion_constant << std::endl;
 }
 
 void RenderView::increaseScale(float scale) {
 	this->scale += scale;
 	shaderProgram->setUniform2f("texScale",
 			glm::vec2(this->scale, this->scale));
+//	std::cout << "scale: " << this->scale << std::endl;
 }
 
 void RenderView::increaseInterpupillarDistance(float increase_factor) {
