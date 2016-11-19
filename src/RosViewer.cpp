@@ -18,6 +18,9 @@ SDL_Window *mainwindow; // Our window handle
 SDL_GLContext maincontext; // Our opengl context handle
 cv::Mat texture;
 Render::RenderView* renderView;
+ros::Time begin;
+int renderedFrames = 0;
+int receivedFrames = 0;
 
 void HMDInfoCallback(const oculus_ros::HMDInfoPtr& info) {
 	hmd_info = info;
@@ -49,8 +52,20 @@ void CameraImageCallback(const sensor_msgs::ImageConstPtr& msg) {
 
 	renderView->addCVTexture(ptr->image);
 
+	receivedFrames++;
+
 	//std::cerr << "cols: " << msg->width << " " << ptr->image.cols  << " rows: " << msg->height << std::endl;
 	//std::cerr << "image callback" << std::endl;
+}
+
+void checkFrames() {
+	if((ros::Time::now() - begin).sec >= 1) {
+		std::cout << "received fps: " << receivedFrames << std::endl;
+		std::cout << "rendered fps: " << renderedFrames << std::endl;
+		begin = ros::Time::now();
+		receivedFrames = 0;
+		renderedFrames = 0;
+	}
 }
 
 int main(int argc, char** argv) {
@@ -113,12 +128,13 @@ int main(int argc, char** argv) {
 
 	SDL_Event event;
 	while (!quit && ros::ok()) {
-		if (hmd_connected) {
-			renderView->display();
-		} else {
-			renderView->display();
-		}
-
+		checkFrames();
+//		if (hmd_connected) {
+//			renderView->display();
+//		} else {
+//			renderView->display();
+//		}
+		renderView->display();
 		SDL_GL_SwapWindow(mainwindow);
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
@@ -154,6 +170,7 @@ int main(int argc, char** argv) {
 				break;
 			}
 		}
+		renderedFrames++;
 		ros::spinOnce();
 	}
 	// Delete our opengl context, destroy our window, and shutdown SDL
