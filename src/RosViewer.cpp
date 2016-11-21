@@ -12,174 +12,190 @@
 #include <oculus_ros/RenderView.h>
 #include <SDL2/SDL.h>
 
+#define SHOWFPS 0
+
 oculus_ros::HMDInfoPtr hmd_info;
 bool hmd_connected = false;
 SDL_Window *mainwindow; // Our window handle
 SDL_GLContext maincontext; // Our opengl context handle
 cv::Mat texture;
-Render::RenderView* renderView;
-ros::Time begin;
-int renderedFrames = 0;
-int receivedFrames = 0;
+Render::RenderView *renderView;
 
-void HMDInfoCallback(const oculus_ros::HMDInfoPtr& info) {
-	hmd_info = info;
-	if (hmd_connected == false) {
-		if (!mainwindow) {
-			return;
-		}
-		SDL_SetWindowSize(mainwindow, hmd_info->HResolution,
-				hmd_info->VResolution);
-		SDL_SetWindowPosition(mainwindow, hmd_info->WindowsPosX,
-				hmd_info->WindowsPosY);
-		//SDL_SetWindowFullscreen(mainwindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
+#if SHOWFPS == 1
+    ros::Time begin;
+    int renderedFrames = 0;
+    int receivedFrames = 0;
+#endif
 
-		renderView->setResolution(hmd_info->HResolution, hmd_info->VResolution);
-	}
-	hmd_connected = true;
+void HMDInfoCallback(const oculus_ros::HMDInfoPtr &info) {
+    hmd_info = info;
+    if (hmd_connected == false) {
+        if (!mainwindow) {
+            return;
+        }
+        SDL_SetWindowSize(mainwindow, hmd_info->HResolution,
+                          hmd_info->VResolution);
+        SDL_SetWindowPosition(mainwindow, hmd_info->WindowsPosX,
+                              hmd_info->WindowsPosY);
+        //SDL_SetWindowFullscreen(mainwindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
 
-	//std::cerr << "hmd callback" << hmd_info->display_id << std::endl;
+        renderView->setResolution(hmd_info->HResolution, hmd_info->VResolution);
+    }
+    hmd_connected = true;
+
+    //std::cerr << "hmd callback" << hmd_info->display_id << std::endl;
 }
 
-void CameraImageCallback(const sensor_msgs::ImageConstPtr& msg) {
-	cv_bridge::CvImagePtr ptr;
+void CameraImageCallback(const sensor_msgs::ImageConstPtr &msg) {
+    cv_bridge::CvImagePtr ptr;
 
-	try {
-		ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-	} catch (cv_bridge::Exception& e) {
-		ROS_ERROR("cv bridge exception: %s", e.what());
-	}
+    try {
+        ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+    } catch (cv_bridge::Exception &e) {
+        ROS_ERROR("cv bridge exception: %s", e.what());
+    }
 
-	renderView->addCVTexture(ptr->image);
+    renderView->addCVTexture(ptr->image);
 
-	receivedFrames++;
+#if SHOWFPS==1
+    receivedFrames++;
+#endif
 
-	//std::cerr << "cols: " << msg->width << " " << ptr->image.cols  << " rows: " << msg->height << std::endl;
-	//std::cerr << "image callback" << std::endl;
+    //std::cerr << "cols: " << msg->width << " " << ptr->image.cols  << " rows: " << msg->height << std::endl;
+    //std::cerr << "image callback" << std::endl;
 }
 
+#if SHOWFPS==1
 void checkFrames() {
-	if((ros::Time::now() - begin).sec >= 1) {
-		std::cout << "received fps: " << receivedFrames << std::endl;
-		std::cout << "rendered fps: " << renderedFrames << std::endl;
-		begin = ros::Time::now();
-		receivedFrames = 0;
-		renderedFrames = 0;
-	}
+    if ((ros::Time::now() - begin).sec >= 1) {
+        std::cout << "received fps: " << receivedFrames << std::endl;
+        std::cout << "rendered fps: " << renderedFrames << std::endl;
+        begin = ros::Time::now();
+        receivedFrames = 0;
+        renderedFrames = 0;
+    }
 }
+#endif
 
-int main(int argc, char** argv) {
-	ros::init(argc, argv, "oculus_image_viewer");
+int main(int argc, char **argv) {
+    ros::init(argc, argv, "oculus_image_viewer");
 
-	ros::NodeHandle node;
-	image_transport::ImageTransport image_transport(node);
-	
-	
-	std::string camera_topic = "/ardrone/front/image_raw";
-	ros::NodeHandle local_node("~");
-	local_node.getParam("camera_topic", camera_topic);
+    ros::NodeHandle node;
+    image_transport::ImageTransport image_transport(node);
 
-	ros::Subscriber sub_hmd_info = node.subscribe("/oculus/hmd_info", 1,
-			&HMDInfoCallback);
 
-	if (SDL_Init(SDL_INIT_VIDEO) < 0) { // Initialize SDL's Video subsystem
-		std::cout << "Unable to initialize SDL";
-		return 1;
-	}
+    std::string camera_topic = "/ardrone/front/image_raw";
+    ros::NodeHandle local_node("~");
+    local_node.getParam("camera_topic", camera_topic);
 
-	// Request opengl 4.4 context.
-	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+    ros::Subscriber sub_hmd_info = node.subscribe("/oculus/hmd_info", 1,
+                                                  &HMDInfoCallback);
 
-	if (hmd_connected) {
-		mainwindow = SDL_CreateWindow("oculus_viewer",
-				SDL_WINDOWPOS_CENTERED_DISPLAY(hmd_info->DisplayId),
-				SDL_WINDOWPOS_CENTERED_DISPLAY(hmd_info->DisplayId),
-				hmd_info->HResolution, hmd_info->VResolution,
-				SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_OPENGL);
-	} else {
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) { // Initialize SDL's Video subsystem
+        std::cout << "Unable to initialize SDL";
+        return 1;
+    }
 
-		// Create our window centered
-		mainwindow = SDL_CreateWindow("oculus_viewer", SDL_WINDOWPOS_CENTERED,
-		SDL_WINDOWPOS_CENTERED, 1280, 800,
-				SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN); // | SDL_WINDOW_RESIZABLE
-	}
+    // Request opengl 4.4 context.
+    SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 
-	if (!mainwindow) { // Die if creation failed
-		std::cout << "SDL Error: " << SDL_GetError() << std::endl;
-		SDL_Quit();
-		return 1;
-	}
+    if (hmd_connected) {
+        mainwindow = SDL_CreateWindow("oculus_viewer",
+                                      SDL_WINDOWPOS_CENTERED_DISPLAY(hmd_info->DisplayId),
+                                      SDL_WINDOWPOS_CENTERED_DISPLAY(hmd_info->DisplayId),
+                                      hmd_info->HResolution, hmd_info->VResolution,
+                                      SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_OPENGL);
+    } else {
 
-	bool quit = false;
+        // Create our window centered
+        mainwindow = SDL_CreateWindow("oculus_viewer", SDL_WINDOWPOS_CENTERED,
+                                      SDL_WINDOWPOS_CENTERED, 1280, 800,
+                                      SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN); // | SDL_WINDOW_RESIZABLE
+    }
+
+    if (!mainwindow) { // Die if creation failed
+        std::cout << "SDL Error: " << SDL_GetError() << std::endl;
+        SDL_Quit();
+        return 1;
+    }
+
+    bool quit = false;
 
 //	image_transport::Subscriber sub_camera_image = image_transport.subscribe(
 //			"/ardrone/front/image_raw", 1, &CameraImageCallback);
-	image_transport::Subscriber sub_camera_image = image_transport.subscribe(
-			camera_topic, 1, &CameraImageCallback);
+    image_transport::Subscriber sub_camera_image = image_transport.subscribe(
+            camera_topic, 1, &CameraImageCallback);
 
-	if (hmd_connected) {
-		renderView = new Render::RenderView(mainwindow, maincontext,
-				hmd_info->HResolution, hmd_info->VResolution);
-	} else {
-		renderView = new Render::RenderView(mainwindow, maincontext, 1280, 800);
-	}
+    if (hmd_connected) {
+        renderView = new Render::RenderView(mainwindow, maincontext,
+                                            hmd_info->HResolution, hmd_info->VResolution);
+    } else {
+        renderView = new Render::RenderView(mainwindow, maincontext, 1280, 800);
+    }
 
-	SDL_Event event;
-	while (!quit && ros::ok()) {
-		checkFrames();
+    ros::Rate rate(60);
+
+    SDL_Event event;
+    while (!quit && ros::ok()) {
+#if SHOWFPS==1
+        checkFrames();
+#endif
 //		if (hmd_connected) {
 //			renderView->display();
 //		} else {
 //			renderView->display();
 //		}
-		renderView->display();
-		SDL_GL_SwapWindow(mainwindow);
-		while (SDL_PollEvent(&event)) {
-			switch (event.type) {
-			case SDL_QUIT:
-				quit = true;
-				break;
-				/*case SDL_WINDOWEVENT:
-				 if (event.window.event == SDL_WINDOWEVENT_RESIZED)
-				 renderView->reshape(event.window.data1, event.window.data2);
-				 break;
-				 */
-			case SDL_KEYDOWN:
-				switch (event.key.keysym.sym) {
-				case SDLK_UP:
-					renderView->increaseScale(0.05);
-					break;
-				case SDLK_DOWN:
-					renderView->increaseScale(-0.05);
-					break;
-				case SDLK_LEFT:
-					renderView->increaseDistortionConstant(-0.05);
-					break;
-				case SDLK_RIGHT:
-					renderView->increaseDistortionConstant(0.05);
-					break;
-				case SDLK_j:
-					renderView->increaseInterpupillarDistance(-0.01);
-					break;
-				case SDLK_k:
-					renderView->increaseInterpupillarDistance(0.01);
-					break;
-				}
-				break;
-			}
-		}
-		renderedFrames++;
-		ros::spinOnce();
-	}
-	// Delete our opengl context, destroy our window, and shutdown SDL
-	SDL_GL_DeleteContext(maincontext);
-	SDL_DestroyWindow(mainwindow);
-	SDL_Quit();
-	delete (renderView);
+        renderView->display();
+        SDL_GL_SwapWindow(mainwindow);
+        while (SDL_PollEvent(&event)) {
+            switch (event.type) {
+                case SDL_QUIT:
+                    quit = true;
+                    break;
+                    /*case SDL_WINDOWEVENT:
+                     if (event.window.event == SDL_WINDOWEVENT_RESIZED)
+                     renderView->reshape(event.window.data1, event.window.data2);
+                     break;
+                     */
+                case SDL_KEYDOWN:
+                    switch (event.key.keysym.sym) {
+                        case SDLK_UP:
+                            renderView->increaseScale(0.05);
+                            break;
+                        case SDLK_DOWN:
+                            renderView->increaseScale(-0.05);
+                            break;
+                        case SDLK_LEFT:
+                            renderView->increaseDistortionConstant(-0.05);
+                            break;
+                        case SDLK_RIGHT:
+                            renderView->increaseDistortionConstant(0.05);
+                            break;
+                        case SDLK_j:
+                            renderView->increaseInterpupillarDistance(-0.01);
+                            break;
+                        case SDLK_k:
+                            renderView->increaseInterpupillarDistance(0.01);
+                            break;
+                    }
+                    break;
+            }
+        }
+#if SHOWFPS==1
+        renderedFrames++;
+#endif
+        ros::spinOnce();
+        rate.sleep();
+    }
+    // Delete our opengl context, destroy our window, and shutdown SDL
+    SDL_GL_DeleteContext(maincontext);
+    SDL_DestroyWindow(mainwindow);
+    SDL_Quit();
+    delete (renderView);
 
-	return 0;
+    return 0;
 }
 
 //

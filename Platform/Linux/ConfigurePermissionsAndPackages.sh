@@ -32,7 +32,7 @@
 #############################################################################
 
 echo "Installing OculusVR Rift udev rules file..."
-sudo cp ./LibOVR/90-oculus.rules /lib/udev/rules.d
+sudo cp 90-oculus.rules /lib/udev/rules.d
 echo "Installing libudev..."
 sudo apt-get install libudev-dev
 echo "Installing libxext..."
