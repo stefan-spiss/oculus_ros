@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <launch>
 	<node name="oculus_viewer" pkg="oculus_ros" type="ros_viewer">
 		<param name="camera_topic" value="/camera/image_raw"/>
