@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+    <include file="$(find ardrone_autonomy)/launch/ardrone.launch"/>
+    <node name="oculus_driver" pkg="oculus_ros" type="ros_driver"/>
+    <node name="oculus_viewer" pkg="oculus_ros" type="ros_viewer"/>
+</launch>
